@@ -3,7 +3,7 @@ pipeline {
     environment {
         branch = 'master'
         scmUrl = 'ssh://git@github.com/gingeririna/test-maven-project.git'
-	def config = readYaml file: 'config.yml'
+        def conf = readYaml file: 'config.yml' 
     }
     stages {
         stage('checkout git') {
@@ -15,8 +15,28 @@ pipeline {
         stage('build') {
             steps {
                 //sh 'cd ./project && mvn clean test'
-		dir : 'project'
-		sh 'mvn clean test'
+		
+		echo "${conf}"
+                
+                script {
+                    def env.buildfolder = conf.build.projectFolder
+                }
+		echo "${conf}"
+
+
+
+		//dir('project') {
+		//    echo "${config}"
+	        //    sh 'mvn clean test'
+		//}
+            //sh 'curl -OL https://raw.githubusercontent.com/monodot/jenkins-demos/master/environment-variables/extravars.properties'
+
+            //script {
+            //def props = readProperties file: 'extravars.properties'
+            //env.WEATHER = props.WEATHER
+            //}
+
+            //sh "echo The weather is $WEATHER"
             }
         }
 
