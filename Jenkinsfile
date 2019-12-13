@@ -36,13 +36,32 @@ pipeline {
                 )
             } 
         }    
-        stage ('test') {
-            steps {
-                parallel (
-                    "integration": { sh 'cd ./test && mvn clean test -Dscope=integration' },
-                    "performance": { sh 'cd ./test && mvn clean test -Dscope=performance'},
-                    "regression": { sh 'cd ./test && mvn clean test -Dscope=regression; exit 1' }
-                )
+        stage ('tests') {
+            parallel {
+                stage ('integration') {
+                    steps {
+                        test (
+                            foldername: "test",
+                            script: "mvn clean test -Dscope=integration"
+                        )
+                    }
+                }
+                stage ('performance') {
+                    steps {
+                        test (
+                            foldername: "test",
+                            script: "mvn clean test -Dscope=performance"
+                        )
+                    }
+                }
+                stage ('regression') {
+                    steps {
+                        test (
+                            foldername: "test",
+                            script: "mvn clean test -Dscope=regression; exit 1"
+                        )
+                    }
+                }
             }
         }
     } 
