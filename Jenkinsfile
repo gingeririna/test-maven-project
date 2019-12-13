@@ -14,25 +14,40 @@ pipeline {
         }
         stage('build') {
             steps {
+                script {
+                    def conf = readYaml file: 'config.yml'
+                    env.folder = conf.build.projectFolder
+                    env.script = conf.build.buildCommand
+                }
                 deploy(
-                    foldername: "project",
-                    script: "mvn clean test"
+                    foldername: "${folder}",
+                    script: "${script}"
                 )
             } 
         }    
         stage('database') {
             steps {
+                script {
+                    def conf = readYaml file: 'config.yml'
+                    env.folder = conf.database.databaseFolder
+                    env.script = conf.database.databaseCommand
+                }
                 deploy(
-                    foldername: "database",
-                    script: "mvn clean test -Dscope=FlywayMigration"
+                    foldername: "${folder}",
+                    script: "${script}"
                 )
             } 
         }
         stage('deploy') {
             steps {
+                script {
+                    def conf = readYaml file: 'config.yml'
+                    env.folder = conf.build.projectFolder
+                    env.script = conf.deploy.deployCommand
+                }
                 deploy(
-                    foldername: "project",
-                    script: "mvn clean install"
+                    foldername: "${folder}",
+                    script: "${script}"
                 )
             } 
         }    
@@ -40,28 +55,61 @@ pipeline {
             parallel {
                 stage ('integration') {
                     steps {
+                        script {
+                            def conf = readYaml file: 'config.yml'
+                            for (int i = 0; i < conf.test.size(); ++i) {
+                                if ( conf.test[i].name == 'integration') {
+                                    def testdata = conf.test[i]
+                                    env.folder = testdata.testFolder
+                                    env.script = testdata.testCommand
+                                    echo "${testdata}"
+                                }
+                            }
+                        }
                         test (
-                            foldername: "test",
-                            script: "mvn clean test -Dscope=integration"
+                            foldername: "${folder}",
+                            script: "${script}"
                         )
                     }
-                }
+                }    
                 stage ('performance') {
                     steps {
+                        script {
+                            def conf = readYaml file: 'config.yml'
+                            for (int i = 0; i < conf.test.size(); ++i) {
+                                if ( conf.test[i].name == 'performance') {
+                                    def testdata = conf.test[i]
+                                    env.folder2 = testdata.testFolder
+                                    env.script2 = testdata.testCommand
+                                    echo "${testdata}"
+                                }
+                            }
+                        }
                         test (
-                            foldername: "test",
-                            script: "mvn clean test -Dscope=performance"
+                            foldername: "${folder2}",
+                            script: "${script2}"
                         )
                     }
-                }
+                }    
                 stage ('regression') {
                     steps {
+                        script {
+                            def conf = readYaml file: 'config.yml'
+                            for (int i = 0; i < conf.test.size(); ++i) {
+                                if ( conf.test[i].name == 'regression') {
+                                    def testdata = conf.test[i]
+                                    env.folder3 = testdata.testFolder
+                                    env.script3 = testdata.testCommand
+                                    echo "${testdata}"
+                                }
+                            }
+                        }
                         test (
-                            foldername: "test",
-                            script: "mvn clean test -Dscope=regression; exit 1"
+                            foldername: "${folder3}",
+                            script: "${script3}"
                         )
                     }
-                }
+                }    
             }
         }
     } 
@@ -74,5 +122,3 @@ pipeline {
         }
     }
 }
-
-
