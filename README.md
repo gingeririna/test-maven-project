@@ -1,3 +1,9 @@
+#Presentation link
+
+https://drive.google.com/open?id=1VF_Za_MeeoZJtJgTgMLtm2cSoV_9Om0G
+
+
+
 # Preamble
 Test task includes developing of jenkins pipeline. Please find all supporting files in this repo.
 
