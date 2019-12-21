@@ -1,8 +1,19 @@
 @Library('jenkins-library@master') _
  
+def conf
+
+
 pipeline {
     agent any
     stages {
+        stage('Read properties') {
+            steps {
+                script {
+                    conf = readYaml file: 'config.yml'
+                    recipients = conf.notifications.email.recipients
+                }
+            }
+        }
         stage('Git Checkout') {
             steps {
             gitCheckout(
@@ -15,7 +26,7 @@ pipeline {
         stage('build') {
             steps {
                 script {
-                    def conf = readYaml file: 'config.yml'
+                    //def conf = readYaml file: 'config.yml'
                     env.folder = conf.build.projectFolder
                     env.script = conf.build.buildCommand
                 }
@@ -28,7 +39,7 @@ pipeline {
         stage('database') {
             steps {
                 script {
-                    def conf = readYaml file: 'config.yml'
+                    //def conf = readYaml file: 'config.yml'
                     env.folder = conf.database.databaseFolder
                     env.script = conf.database.databaseCommand
                 }
@@ -41,7 +52,7 @@ pipeline {
         stage('deploy') {
             steps {
                 script {
-                    def conf = readYaml file: 'config.yml'
+                    //def conf = readYaml file: 'config.yml'
                     env.folder = conf.build.projectFolder
                     env.script = conf.deploy.deployCommand
                 }
@@ -52,73 +63,38 @@ pipeline {
             } 
         }    
         stage ('tests') {
-            parallel {
-                stage ('integration') {
-                    steps {
-                        script {
-                            def conf = readYaml file: 'config.yml'
-                            for (int i = 0; i < conf.test.size(); ++i) {
-                                if ( conf.test[i].name == 'integration') {
-                                    def testdata = conf.test[i]
-                                    env.folder = testdata.testFolder
-                                    env.script = testdata.testCommand
-                                    echo "${testdata}"
-                                }
+            steps {
+                script {
+
+                    def tests = [:]
+                    
+                    for (int i = 0; i < conf.test.size(); ++i) {
+                        def name = conf.test[i].name
+                        def folder = conf.test[i].testFolder
+                        def command = conf.test[i].testCommand
+                        tests["${conf.test[i].name}"] = {
+                            stage("${name}") {
+                                echo "i'm in"
+                                echo "${name}"
+                                test(
+                                    foldername: "${folder}",
+                                    script: "${command}"
+                                )
+                                echo "I'm out"
                             }
                         }
-                        test (
-                            foldername: "${folder}",
-                            script: "${script}"
-                        )
-                    }
-                }    
-                stage ('performance') {
-                    steps {
-                        script {
-                            def conf = readYaml file: 'config.yml'
-                            for (int i = 0; i < conf.test.size(); ++i) {
-                                if ( conf.test[i].name == 'performance') {
-                                    def testdata = conf.test[i]
-                                    env.folder2 = testdata.testFolder
-                                    env.script2 = testdata.testCommand
-                                    echo "${testdata}"
-                                }
-                            }
-                        }
-                        test (
-                            foldername: "${folder2}",
-                            script: "${script2}"
-                        )
-                    }
-                }    
-                stage ('regression') {
-                    steps {
-                        script {
-                            def conf = readYaml file: 'config.yml'
-                            for (int i = 0; i < conf.test.size(); ++i) {
-                                if ( conf.test[i].name == 'regression') {
-                                    def testdata = conf.test[i]
-                                    env.folder3 = testdata.testFolder
-                                    env.script3 = testdata.testCommand
-                                    echo "${testdata}"
-                                }
-                            }
-                        }
-                        test (
-                            foldername: "${folder3}",
-                            script: "${script3}"
-                        )
-                    }
-                }    
+                    }   
+                    parallel tests
+                }
             }
-        }
-    } 
+        } 
+    }
     post {
         failure {
-            mail to: 'team@example.com', subject: 'Pipeline failed', body: "${env.BUILD_URL}"
+            mail to: "${recipients}", subject: 'Pipeline failed', body: "${env.BUILD_URL}"
         }
         success {
-            mail to: 'team@example.com', subject: 'Pipeline succeeded', body: "${env.BUILD_URL}"
+            mail to: "${recipients}", subject: 'Pipeline succeeded', body: "${env.BUILD_URL}"
         }
     }
 }
